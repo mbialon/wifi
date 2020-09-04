@@ -160,7 +160,7 @@ func (c *client) Scan() ([]*BSS, error) {
 		},
 	}
 
-	flags := netlink.Request | netlink.Dump
+	flags := netlink.Request | netlink.Acknowledge
 	msgs, err := c.c.Execute(req, c.familyID, flags)
 	if err != nil {
 		return nil, err
