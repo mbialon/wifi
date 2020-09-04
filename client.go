@@ -60,6 +60,7 @@ type osClient interface {
 	Close() error
 	Interfaces() ([]*Interface, error)
 	BSS(ifi *Interface) (*BSS, error)
+	Scan() ([]*BSS, error)
 	StationInfo(ifi *Interface) ([]*StationInfo, error)
 	Connect(ifi *Interface, ssid string) error
 }
