@@ -50,6 +50,10 @@ func (c *Client) BSS(ifi *Interface) (*BSS, error) {
 	return c.c.BSS(ifi)
 }
 
+func (c *Client) Scan() ([]*BSS, error) {
+	return c.c.Scan()
+}
+
 // StationInfo retrieves all station statistics about a WiFi interface.
 func (c *Client) StationInfo(ifi *Interface) ([]*StationInfo, error) {
 	return c.c.StationInfo(ifi)
