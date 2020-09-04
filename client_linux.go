@@ -152,6 +152,27 @@ func (c *client) BSS(ifi *Interface) (*BSS, error) {
 	return parseBSS(msgs)
 }
 
+func (c *client) Scan() ([]*BSS, error) {
+	req := genetlink.Message{
+		Header: genetlink.Header{
+			Command: nl80211.CmdTriggerScan,
+			Version: c.familyVersion,
+		},
+	}
+
+	flags := netlink.Request | netlink.Dump
+	msgs, err := c.c.Execute(req, c.familyID, flags)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := c.checkMessages(msgs, nl80211.CmdNewScanResults); err != nil {
+		return nil, err
+	}
+
+	return parseBSSs(msgs)
+}
+
 // StationInfo requests that nl80211 return all station info for the specified
 // Interface.
 func (c *client) StationInfo(ifi *Interface) ([]*StationInfo, error) {
@@ -273,6 +294,42 @@ func (ifi *Interface) parseAttributes(attrs []netlink.Attribute) error {
 	}
 
 	return nil
+}
+
+func parseBSSs(msgs []genetlink.Message) ([]*BSS, error) {
+	var bsss []*BSS
+	for _, m := range msgs {
+		attrs, err := netlink.UnmarshalAttributes(m.Data)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, a := range attrs {
+			if a.Type != nl80211.AttrBss {
+				continue
+			}
+
+			nattrs, err := netlink.UnmarshalAttributes(a.Data)
+			if err != nil {
+				return nil, err
+			}
+
+			// The BSS which is associated with an interface will have a status
+			// attribute
+			if !attrsContain(nattrs, nl80211.BssStatus) {
+				continue
+			}
+
+			var bss BSS
+			if err := (&bss).parseAttributes(nattrs); err != nil {
+				return nil, err
+			}
+
+			bsss = append(bsss, &bss)
+		}
+	}
+
+	return bsss, nil
 }
 
 // parseBSS parses a single BSS with a status attribute from nl80211 BSS messages.
